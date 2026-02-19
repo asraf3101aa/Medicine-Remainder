@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Medicine.Domain/Medicine.Domain.csproj" />
+  <Project Path="Medicine.Application/Medicine.Application.csproj" />
+  <Project Path="Medicine.Infrastructure/Medicine.Infrastructure.csproj" />
+  <Project Path="Medicine.Api/Medicine.Api.csproj" />
+  <Project Path="Medicine.Application.UnitTests/Medicine.Application.UnitTests.csproj" />
+</Solution>
