@@ -237,7 +237,7 @@ components:
           type: object
           additionalProperties: {}
           nullable: true
-        errorDetail:
+        error:
           type: object
           nullable: true
 

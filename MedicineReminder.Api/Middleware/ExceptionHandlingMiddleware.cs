@@ -52,10 +52,14 @@ public class ExceptionHandlingMiddleware
             return;
         }
 
+        object? error = isDevelopment
+            ? new { Detail = exception.Message, StackTrace = exception.StackTrace }
+            : null;
+
         if (exception is KeyNotFoundException)
         {
             context.Response.StatusCode = (int)HttpStatusCode.NotFound;
-            var response = ApiResponse<object>.Error(exception.Message);
+            var response = ApiResponse<object>.Error(exception.Message, error);
             await context.Response.WriteAsync(JsonSerializer.Serialize(response, options));
             return;
         }
@@ -63,15 +67,14 @@ public class ExceptionHandlingMiddleware
         if (exception is UnauthorizedAccessException)
         {
             context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-            var response = ApiResponse<object>.Error("You are not authorized to access this resource.");
+            var response = ApiResponse<object>.Error("You are not authorized to access this resource.", error);
             await context.Response.WriteAsync(JsonSerializer.Serialize(response, options));
             return;
         }
 
         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-        var errorDetail = isDevelopment ? new { Detail = exception.Message, StackTrace = exception.StackTrace } : null;
-        var errorResponse = ApiResponse<object>.Error("An unexpected error occurred.", errorDetail);
+        var errorResponse = ApiResponse<object>.Error("An unexpected error occurred.", error);
 
         await context.Response.WriteAsync(JsonSerializer.Serialize(errorResponse, options));
     }

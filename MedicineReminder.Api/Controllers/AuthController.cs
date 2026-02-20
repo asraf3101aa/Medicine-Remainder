@@ -24,7 +24,8 @@ public class AuthController : ControllerBase
 
         if (errors != null && errors.Any())
         {
-            return BadRequest(ApiResponse<AuthData>.Error(message, errors));
+            var errorsDict = new Dictionary<string, string[]> { { "Identity", errors } };
+            return BadRequest(ApiResponse<AuthData>.Fail(errorsDict, message));
         }
 
         return Ok(ApiResponse<AuthData>.Success(data, message));
@@ -50,7 +51,8 @@ public class AuthController : ControllerBase
 
         if (errors != null && errors.Any())
         {
-            return BadRequest(ApiResponse<AuthData>.Error(message, errors));
+            var errorsDict = new Dictionary<string, string[]> { { "Identity", errors } };
+            return BadRequest(ApiResponse<AuthData>.Fail(errorsDict, message));
         }
 
         return Ok(ApiResponse<AuthData>.Success(data, message));
@@ -63,7 +65,8 @@ public class AuthController : ControllerBase
 
         if (errors != null && errors.Any())
         {
-            return BadRequest(ApiResponse<AuthData>.Error(message, errors));
+            var errorsDict = new Dictionary<string, string[]> { { "Identity", errors } };
+            return BadRequest(ApiResponse<AuthData>.Fail(errorsDict, message));
         }
 
         return Ok(ApiResponse<AuthData>.Success(data, message));

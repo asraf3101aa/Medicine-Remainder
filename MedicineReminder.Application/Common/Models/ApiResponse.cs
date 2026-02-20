@@ -13,10 +13,19 @@ public enum ApiResponseStatus
 public class ApiResponse<T>
 {
     public ApiResponseStatus Status { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Message { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public T? Data { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IDictionary<string, string[]>? Errors { get; set; }
-    public object? ErrorDetail { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonPropertyName("error")]
+    public object? ErrorInfo { get; set; }
 
     public static ApiResponse<T> Success(T? data, string? message = null) => new()
     {
@@ -32,11 +41,11 @@ public class ApiResponse<T>
         Message = message
     };
 
-    public static ApiResponse<T> Error(string message, object? errorDetail = null) => new()
+    public static ApiResponse<T> Error(string message, object? error = null) => new()
     {
         Status = ApiResponseStatus.Error,
         Message = message,
-        ErrorDetail = errorDetail
+        ErrorInfo = error
     };
 }
 
