@@ -116,6 +116,12 @@ public class IdentityService : IIdentityService
             : (false, "Email verification failed");
     }
 
+    public async Task<bool> IsEmailUniqueAsync(string email)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        return user == null;
+    }
+
     private AuthData GenerateAuthData(ApplicationUser user)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");

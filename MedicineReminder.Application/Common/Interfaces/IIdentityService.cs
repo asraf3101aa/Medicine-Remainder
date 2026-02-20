@@ -8,4 +8,5 @@ public interface IIdentityService
     Task<(AuthData? Data, string Message, string[]? Errors)> LoginAsync(string email, string password, string? fcmToken = null);
     Task<(AuthData? Data, string Message, string[]? Errors)> RefreshTokenAsync(string accessToken, string refreshToken);
     Task<(bool Success, string Message)> VerifyEmailAsync(string userId, string token);
+    Task<bool> IsEmailUniqueAsync(string email);
 }

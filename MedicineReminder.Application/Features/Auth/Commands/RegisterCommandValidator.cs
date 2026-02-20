@@ -1,14 +1,20 @@
 using FluentValidation;
+using MedicineReminder.Application.Common.Interfaces;
 
 namespace MedicineReminder.Application.Features.Auth.Commands;
 
 public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 {
-    public RegisterCommandValidator()
+    private readonly IIdentityService _identityService;
+
+    public RegisterCommandValidator(IIdentityService identityService)
     {
+        _identityService = identityService;
+
         RuleFor(v => v.Email)
             .NotEmpty().WithMessage("Email is required.")
-            .EmailAddress().WithMessage("Email must be a valid email address.");
+            .EmailAddress().WithMessage("Email must be a valid email address.")
+            .MustAsync(BeUniqueEmail).WithMessage("User with this email address already exists.");
 
         RuleFor(v => v.Password)
             .NotEmpty().WithMessage("Password is required.")
@@ -17,5 +23,10 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
             .Matches(@"[a-z]").WithMessage("Password must contain at least one lowercase letter.")
             .Matches(@"[0-9]").WithMessage("Password must contain at least one digit.")
             .Matches(@"[^a-zA-Z0-9]").WithMessage("Password must contain at least one special character.");
+    }
+
+    private async Task<bool> BeUniqueEmail(string email, CancellationToken cancellationToken)
+    {
+        return await _identityService.IsEmailUniqueAsync(email);
     }
 }
