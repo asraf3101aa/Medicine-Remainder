@@ -7,6 +7,6 @@ public class SetReminderStatusCommandValidator : AbstractValidator<SetReminderSt
     public SetReminderStatusCommandValidator()
     {
         RuleFor(v => v.Id)
-            .GreaterThan(0).WithMessage("Id must be greater than 0.");
+            .NotEmpty().WithMessage("Id must be greater than 0.");
     }
 }

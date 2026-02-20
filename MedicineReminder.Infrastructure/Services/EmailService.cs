@@ -1,6 +1,6 @@
+using MedicineReminder.Application.Common.Interfaces;
 using System.Text;
 using System.Text.Json;
-using MedicineReminder.Application.Common.Interfaces;
 using MedicineReminder.Application.Common.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -65,7 +65,6 @@ public class EmailService : IEmailService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to publish email message to RabbitMQ for {To}.", to);
-            // In a real application, you might want to fallback to immediate sending or store in DB
             throw;
         }
     }

@@ -11,7 +11,7 @@ public class CreateMedicineCommandValidator : AbstractValidator<CreateMedicineCo
             .NotEmpty();
 
         RuleFor(v => v.DosageAmount)
-            .GreaterThan(0)
+            .NotEmpty()
             .WithMessage("Dosage amount must be greater than 0");
 
         RuleFor(v => v.Unit)

@@ -7,6 +7,6 @@ public class DeleteMedicineCommandValidator : AbstractValidator<DeleteMedicineCo
     public DeleteMedicineCommandValidator()
     {
         RuleFor(v => v.Id)
-            .GreaterThan(0).WithMessage("Id must be greater than 0.");
+            .NotEmpty().WithMessage("Id must be greater than 0.");
     }
 }

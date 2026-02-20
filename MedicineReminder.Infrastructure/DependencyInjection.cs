@@ -1,8 +1,8 @@
 using System.Text;
 using MedicineReminder.Application.Common.Interfaces;
-using MedicineReminder.Infrastructure.Identity;
 using MedicineReminder.Infrastructure.Persistence;
 using MedicineReminder.Infrastructure.Services;
+using MedicineReminder.Domain.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -20,16 +20,20 @@ public static class DependencyInjection
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
-        services.AddDbContext<MedicineDbContext>(options =>
+        services.AddDbContext<MedicineReminderDbContext>(options =>
             options.UseNpgsql(connectionString,
-                builder => builder.MigrationsAssembly(typeof(MedicineDbContext).Assembly.FullName)));
+                builder => builder.MigrationsAssembly(typeof(MedicineReminderDbContext).Assembly.FullName)));
 
-        services.AddScoped<IMedicineDbContext>(provider => provider.GetRequiredService<MedicineDbContext>());
-        services.AddScoped<IIdentityService, IdentityService>();
+        services.AddScoped<IMedicineReminderDbContext>(provider => provider.GetRequiredService<MedicineReminderDbContext>());
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IAuthService<User>, AuthService>();
+        services.AddScoped<IMedicineService, MedicineService>();
+        services.AddScoped<IReminderService<Reminder>, ReminderService>();
+        services.AddScoped<IUserDeviceService, UserDeviceService>();
         services.AddTransient<IEmailService, EmailService>();
         services.AddTransient<ISmtpEmailSender, SmtpEmailSender>();
         services.AddHostedService<EmailBackgroundWorker>();
-        services.AddTransient<INotificationService, FirebaseNotificationService>();
+        services.AddTransient<IFirebaseNotificationService, FirebaseNotificationService>();
 
         // Redis & Workers
         var redisConnectionString = configuration.GetConnectionString("Redis") ?? "localhost";
@@ -49,7 +53,7 @@ public static class DependencyInjection
         services.AddHostedService<DailyReminderLoaderWorker>();
         services.AddHostedService<ReminderPumperWorker>();
 
-        services.AddIdentityCore<ApplicationUser>(options =>
+        services.AddIdentityCore<User>(options =>
         {
             options.Password.RequireDigit = true;
             options.Password.RequireLowercase = true;
@@ -59,7 +63,7 @@ public static class DependencyInjection
             options.SignIn.RequireConfirmedEmail = true;
         })
         .AddRoles<IdentityRole>()
-        .AddEntityFrameworkStores<MedicineDbContext>()
+        .AddEntityFrameworkStores<MedicineReminderDbContext>()
         .AddDefaultTokenProviders();
 
         // JWT Configuration

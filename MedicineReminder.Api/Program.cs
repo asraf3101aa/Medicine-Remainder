@@ -30,7 +30,7 @@ builder.Services.AddApiVersioning(options =>
 });
 
 builder.Services.AddHealthChecks()
-    .AddDbContextCheck<MedicineReminder.Infrastructure.Persistence.MedicineDbContext>();
+    .AddDbContextCheck<MedicineReminder.Infrastructure.Persistence.MedicineReminderDbContext>();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
@@ -40,15 +40,13 @@ builder.Services.AddControllers()
     {
         options.SuppressModelStateInvalidFilter = true;
     });
-builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    // In .NET 10, OpenAPI UI might require additional setup or if using scalar/swagger
+    app.UseDeveloperExceptionPage();
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();

@@ -1,21 +1,23 @@
 using MediatR;
 using MedicineReminder.Application.Common.Interfaces;
+using MedicineReminder.Application.Common.Models;
+using MedicineReminder.Domain.Entities;
 
 namespace MedicineReminder.Application.Features.Auth.Commands;
 
-public record LoginCommand(string Email, string Password, string? FcmToken = null) : IRequest<(AuthData? Data, string Message, string[]? Errors)>;
+public record LoginCommand(string Email, string Password, string? FcmToken = null, string? DeviceName = null) : IRequest<ServiceResult<AuthTokens>>;
 
-public class LoginCommandHandler : IRequestHandler<LoginCommand, (AuthData? Data, string Message, string[]? Errors)>
+public class LoginCommandHandler : IRequestHandler<LoginCommand, ServiceResult<AuthTokens>>
 {
-    private readonly IIdentityService _identityService;
+    private readonly IAuthService<User> _authService;
 
-    public LoginCommandHandler(IIdentityService identityService)
+    public LoginCommandHandler(IAuthService<User> authService)
     {
-        _identityService = identityService;
+        _authService = authService;
     }
 
-    public async Task<(AuthData? Data, string Message, string[]? Errors)> Handle(LoginCommand request, CancellationToken cancellationToken)
+    public async Task<ServiceResult<AuthTokens>> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        return await _identityService.LoginAsync(request.Email, request.Password, request.FcmToken);
+        return await _authService.LoginAsync(request.Email, request.Password, request.FcmToken, request.DeviceName);
     }
 }

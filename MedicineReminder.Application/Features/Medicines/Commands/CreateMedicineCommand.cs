@@ -2,10 +2,11 @@ using MediatR;
 using MedicineReminder.Application.Common.Interfaces;
 using MedicineReminder.Domain.Entities;
 using MedicineReminder.Domain.Enums;
+using MedicineReminder.Application.Common.Models;
 
 namespace MedicineReminder.Application.Features.Medicines.Commands;
 
-public record CreateMedicineCommand : IRequest<(int Data, string Message)>
+public record CreateMedicineCommand : IRequest<ServiceResult<Medicine>>
 {
     public string Name { get; init; } = string.Empty;
     public double DosageAmount { get; init; }
@@ -16,18 +17,18 @@ public record CreateMedicineCommand : IRequest<(int Data, string Message)>
     public DateTime? EndDate { get; init; }
 }
 
-public class CreateMedicineCommandHandler : IRequestHandler<CreateMedicineCommand, (int Data, string Message)>
+public class CreateMedicineCommandHandler : IRequestHandler<CreateMedicineCommand, ServiceResult<Medicine>>
 {
-    private readonly IMedicineDbContext _context;
+    private readonly IMedicineReminderDbContext _context;
     private readonly ICurrentUserService _currentUserService;
 
-    public CreateMedicineCommandHandler(IMedicineDbContext context, ICurrentUserService currentUserService)
+    public CreateMedicineCommandHandler(IMedicineReminderDbContext context, ICurrentUserService currentUserService)
     {
         _context = context;
         _currentUserService = currentUserService;
     }
 
-    public async Task<(int Data, string Message)> Handle(CreateMedicineCommand request, CancellationToken cancellationToken)
+    public async Task<ServiceResult<Medicine>> Handle(CreateMedicineCommand request, CancellationToken cancellationToken)
     {
         var entity = new MedicineReminder.Domain.Entities.Medicine
         {
@@ -44,6 +45,6 @@ public class CreateMedicineCommandHandler : IRequestHandler<CreateMedicineComman
         _context.Medicines.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return (entity.Id, "Medicine created successfully.");
+        return ServiceResult<Medicine>.Success(entity, "Medicine created successfully.");
     }
 }

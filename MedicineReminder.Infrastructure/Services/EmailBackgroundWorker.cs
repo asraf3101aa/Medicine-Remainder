@@ -1,3 +1,4 @@
+using MedicineReminder.Application.Common.Interfaces;
 using System.Text;
 using System.Text.Json;
 using MedicineReminder.Application.Common.Models;
@@ -108,7 +109,6 @@ public class EmailBackgroundWorker : BackgroundService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Exhausted retries for sending email to {To}. Dead lettering or dropping message.", emailRequest.To);
-            // In a production app, you'd move to a Dead Letter Exchange (DLX)
             await _channel!.BasicNackAsync(deliveryTag, multiple: false, requeue: false);
         }
     }

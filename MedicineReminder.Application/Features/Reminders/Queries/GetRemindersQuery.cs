@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MedicineReminder.Application.Features.Reminders.Queries;
 
-public record GetRemindersQuery : IRequest<(PaginatedList<ReminderDto> Data, string Message)>
+public record GetRemindersQuery : IRequest<ServiceResult<PaginatedList<ReminderDto>>>
 {
     public int PageNumber { get; init; } = 1;
     public int PageSize { get; init; } = 10;
@@ -15,20 +15,20 @@ public record GetRemindersQuery : IRequest<(PaginatedList<ReminderDto> Data, str
     public bool? IsActive { get; init; }
 }
 
-public class GetRemindersQueryHandler : IRequestHandler<GetRemindersQuery, (PaginatedList<ReminderDto> Data, string Message)>
+public class GetRemindersQueryHandler : IRequestHandler<GetRemindersQuery, ServiceResult<PaginatedList<ReminderDto>>>
 {
-    private readonly IMedicineDbContext _context;
+    private readonly IMedicineReminderDbContext _context;
     private readonly IMapper _mapper;
     private readonly ICurrentUserService _currentUserService;
 
-    public GetRemindersQueryHandler(IMedicineDbContext context, IMapper mapper, ICurrentUserService currentUserService)
+    public GetRemindersQueryHandler(IMedicineReminderDbContext context, IMapper mapper, ICurrentUserService currentUserService)
     {
         _context = context;
         _mapper = mapper;
         _currentUserService = currentUserService;
     }
 
-    public async Task<(PaginatedList<ReminderDto> Data, string Message)> Handle(GetRemindersQuery request, CancellationToken cancellationToken)
+    public async Task<ServiceResult<PaginatedList<ReminderDto>>> Handle(GetRemindersQuery request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId ?? throw new UnauthorizedAccessException();
 
@@ -57,6 +57,6 @@ public class GetRemindersQueryHandler : IRequestHandler<GetRemindersQuery, (Pagi
 
         var paginatedList = new PaginatedList<ReminderDto>(items, totalCount, request.PageNumber, request.PageSize);
 
-        return (paginatedList, "Reminders fetched successfully.");
+        return ServiceResult<PaginatedList<ReminderDto>>.Success(paginatedList, "Reminders fetched successfully.");
     }
 }

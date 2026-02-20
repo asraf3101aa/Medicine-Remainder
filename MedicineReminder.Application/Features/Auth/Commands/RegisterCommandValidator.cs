@@ -1,15 +1,17 @@
 using FluentValidation;
 using MedicineReminder.Application.Common.Interfaces;
+using MedicineReminder.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 
 namespace MedicineReminder.Application.Features.Auth.Commands;
 
 public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 {
-    private readonly IIdentityService _identityService;
+    private readonly UserManager<User> _userManager;
 
-    public RegisterCommandValidator(IIdentityService identityService)
+    public RegisterCommandValidator(UserManager<User> userManager)
     {
-        _identityService = identityService;
+        _userManager = userManager;
 
         RuleFor(v => v.Email)
             .NotEmpty().WithMessage("Email is required.")
@@ -27,6 +29,6 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 
     private async Task<bool> BeUniqueEmail(string email, CancellationToken cancellationToken)
     {
-        return await _identityService.IsEmailUniqueAsync(email);
+        return await _userManager.FindByEmailAsync(email) == null;
     }
 }

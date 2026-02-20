@@ -1,21 +1,23 @@
 using MediatR;
 using MedicineReminder.Application.Common.Interfaces;
+using MedicineReminder.Application.Common.Models;
+using MedicineReminder.Domain.Entities;
 
 namespace MedicineReminder.Application.Features.Auth.Commands;
 
-public record VerifyEmailCommand(string UserId, string Token) : IRequest<(bool Success, string Message)>;
+public record VerifyEmailCommand(string UserId, string Token) : IRequest<ServiceResult<bool>>;
 
-public class VerifyEmailCommandHandler : IRequestHandler<VerifyEmailCommand, (bool Success, string Message)>
+public class VerifyEmailCommandHandler : IRequestHandler<VerifyEmailCommand, ServiceResult<bool>>
 {
-    private readonly IIdentityService _identityService;
+    private readonly IAuthService<User> _authService;
 
-    public VerifyEmailCommandHandler(IIdentityService identityService)
+    public VerifyEmailCommandHandler(IAuthService<User> authService)
     {
-        _identityService = identityService;
+        _authService = authService;
     }
 
-    public async Task<(bool Success, string Message)> Handle(VerifyEmailCommand request, CancellationToken cancellationToken)
+    public async Task<ServiceResult<bool>> Handle(VerifyEmailCommand request, CancellationToken cancellationToken)
     {
-        return await _identityService.VerifyEmailAsync(request.UserId, request.Token);
+        return await _authService.VerifyEmailAsync(request.UserId, request.Token);
     }
 }

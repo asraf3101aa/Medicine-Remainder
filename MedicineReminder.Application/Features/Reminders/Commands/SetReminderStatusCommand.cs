@@ -1,25 +1,27 @@
 using MediatR;
 using MedicineReminder.Application.Common.Interfaces;
+using MedicineReminder.Application.Common.Models;
+using MedicineReminder.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace MedicineReminder.Application.Features.Reminders.Commands;
 
-public record SetReminderStatusCommand(int Id, bool IsActive) : IRequest<(bool Success, string Message)>;
+public record SetReminderStatusCommand(string Id, bool IsActive) : IRequest<ServiceResult<Reminder>>;
 
-public class SetReminderStatusCommandHandler : IRequestHandler<SetReminderStatusCommand, (bool Success, string Message)>
+public class SetReminderStatusCommandHandler : IRequestHandler<SetReminderStatusCommand, ServiceResult<Reminder>>
 {
-    private readonly IMedicineDbContext _context;
+    private readonly IMedicineReminderDbContext _context;
     private readonly ICurrentUserService _currentUserService;
     private readonly ICacheService _cacheService;
 
-    public SetReminderStatusCommandHandler(IMedicineDbContext context, ICurrentUserService currentUserService, ICacheService cacheService)
+    public SetReminderStatusCommandHandler(IMedicineReminderDbContext context, ICurrentUserService currentUserService, ICacheService cacheService)
     {
         _context = context;
         _currentUserService = currentUserService;
         _cacheService = cacheService;
     }
 
-    public async Task<(bool Success, string Message)> Handle(SetReminderStatusCommand request, CancellationToken cancellationToken)
+    public async Task<ServiceResult<Reminder>> Handle(SetReminderStatusCommand request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId ?? throw new UnauthorizedAccessException();
 
@@ -29,7 +31,7 @@ public class SetReminderStatusCommandHandler : IRequestHandler<SetReminderStatus
 
         if (reminder == null)
         {
-            return (false, "Reminder not found or you do not have permission.");
+            return ServiceResult<Reminder>.NotFound("Reminder not found or you do not have permission.");
         }
 
         reminder.IsActive = request.IsActive;
@@ -50,6 +52,6 @@ public class SetReminderStatusCommandHandler : IRequestHandler<SetReminderStatus
         }
 
         var status = request.IsActive ? "active" : "disabled";
-        return (true, $"Reminder set to {status}.");
+        return ServiceResult<Reminder>.Success(reminder, $"Reminder set to {status}.");
     }
 }

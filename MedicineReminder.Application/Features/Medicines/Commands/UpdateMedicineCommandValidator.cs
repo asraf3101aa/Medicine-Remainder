@@ -11,7 +11,7 @@ public class UpdateMedicineCommandValidator : AbstractValidator<UpdateMedicineCo
             .MaximumLength(100).WithMessage("Name must not exceed 100 characters.");
 
         RuleFor(v => v.DosageAmount)
-            .GreaterThan(0).WithMessage("Dosage amount must be greater than 0.");
+            .NotEmpty().WithMessage("Dosage amount must be greater than 0.");
 
         RuleFor(v => v.Unit)
             .IsInEnum().WithMessage("Invalid dosage unit.");

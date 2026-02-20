@@ -10,13 +10,13 @@ namespace MedicineReminder.Application.UnitTests.Features.Medicines.Commands;
 
 public class CreateMedicineCommandHandlerTests
 {
-    private readonly Mock<IMedicineDbContext> _contextMock;
+    private readonly Mock<IMedicineReminderDbContext> _contextMock;
     private readonly Mock<ICurrentUserService> _currentUserServiceMock;
     private readonly CreateMedicineCommandHandler _handler;
 
     public CreateMedicineCommandHandlerTests()
     {
-        _contextMock = new Mock<IMedicineDbContext>();
+        _contextMock = new Mock<IMedicineReminderDbContext>();
         _currentUserServiceMock = new Mock<ICurrentUserService>();
 
         // Mock the Medicines DbSet
@@ -43,7 +43,7 @@ public class CreateMedicineCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        _contextMock.Verify(m => m.Medicines.Add(It.IsAny<MedicineReminder.Domain.Entities.Medicine>()), Times.Once);
+        _contextMock.Verify(m => m.Medicines.Add(It.IsAny<Medicine>()), Times.Once);
         _contextMock.Verify(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 }

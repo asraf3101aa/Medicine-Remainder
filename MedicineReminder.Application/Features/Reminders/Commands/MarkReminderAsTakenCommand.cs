@@ -1,25 +1,27 @@
 using MediatR;
 using MedicineReminder.Application.Common.Interfaces;
+using MedicineReminder.Application.Common.Models;
+using MedicineReminder.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace MedicineReminder.Application.Features.Reminders.Commands;
 
-public record MarkReminderAsTakenCommand(int Id) : IRequest<(bool Success, string Message)>;
+public record MarkReminderAsTakenCommand(string Id) : IRequest<ServiceResult<Reminder>>;
 
-public class MarkReminderAsTakenCommandHandler : IRequestHandler<MarkReminderAsTakenCommand, (bool Success, string Message)>
+public class MarkReminderAsTakenCommandHandler : IRequestHandler<MarkReminderAsTakenCommand, ServiceResult<Reminder>>
 {
-    private readonly IMedicineDbContext _context;
+    private readonly IMedicineReminderDbContext _context;
     private readonly ICurrentUserService _currentUserService;
     private readonly ICacheService _cacheService;
 
-    public MarkReminderAsTakenCommandHandler(IMedicineDbContext context, ICurrentUserService currentUserService, ICacheService cacheService)
+    public MarkReminderAsTakenCommandHandler(IMedicineReminderDbContext context, ICurrentUserService currentUserService, ICacheService cacheService)
     {
         _context = context;
         _currentUserService = currentUserService;
         _cacheService = cacheService;
     }
 
-    public async Task<(bool Success, string Message)> Handle(MarkReminderAsTakenCommand request, CancellationToken cancellationToken)
+    public async Task<ServiceResult<Reminder>> Handle(MarkReminderAsTakenCommand request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId ?? throw new UnauthorizedAccessException();
 
@@ -29,12 +31,12 @@ public class MarkReminderAsTakenCommandHandler : IRequestHandler<MarkReminderAsT
 
         if (reminder == null)
         {
-            return (false, "Reminder not found or you do not have permission.");
+            return ServiceResult<Reminder>.NotFound("Reminder not found or you do not have permission.");
         }
 
         if (reminder.IsTaken)
         {
-            return (true, "Reminder already marked as taken.");
+            return ServiceResult<Reminder>.Success(reminder, "Reminder already marked as taken.");
         }
 
         reminder.IsTaken = true;
@@ -43,6 +45,6 @@ public class MarkReminderAsTakenCommandHandler : IRequestHandler<MarkReminderAsT
 
         await _cacheService.RemoveReminderFromHotSetAsync(reminder.Id);
 
-        return (true, "Reminder marked as taken successfully.");
+        return ServiceResult<Reminder>.Success(reminder, "Reminder marked as taken successfully.");
     }
 }

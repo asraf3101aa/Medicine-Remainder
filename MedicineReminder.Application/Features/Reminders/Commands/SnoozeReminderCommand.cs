@@ -1,25 +1,27 @@
 using MediatR;
 using MedicineReminder.Application.Common.Interfaces;
+using MedicineReminder.Application.Common.Models;
+using MedicineReminder.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace MedicineReminder.Application.Features.Reminders.Commands;
 
-public record SnoozeReminderCommand(int Id) : IRequest<(bool Success, string Message)>;
+public record SnoozeReminderCommand(string Id) : IRequest<ServiceResult<Reminder>>;
 
-public class SnoozeReminderCommandHandler : IRequestHandler<SnoozeReminderCommand, (bool Success, string Message)>
+public class SnoozeReminderCommandHandler : IRequestHandler<SnoozeReminderCommand, ServiceResult<Reminder>>
 {
-    private readonly IMedicineDbContext _context;
+    private readonly IMedicineReminderDbContext _context;
     private readonly ICurrentUserService _currentUserService;
     private readonly ICacheService _cacheService;
 
-    public SnoozeReminderCommandHandler(IMedicineDbContext context, ICurrentUserService currentUserService, ICacheService cacheService)
+    public SnoozeReminderCommandHandler(IMedicineReminderDbContext context, ICurrentUserService currentUserService, ICacheService cacheService)
     {
         _context = context;
         _currentUserService = currentUserService;
         _cacheService = cacheService;
     }
 
-    public async Task<(bool Success, string Message)> Handle(SnoozeReminderCommand request, CancellationToken cancellationToken)
+    public async Task<ServiceResult<Reminder>> Handle(SnoozeReminderCommand request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId ?? throw new UnauthorizedAccessException();
 
@@ -29,17 +31,17 @@ public class SnoozeReminderCommandHandler : IRequestHandler<SnoozeReminderComman
 
         if (reminder == null)
         {
-            return (false, "Reminder not found or you do not have permission.");
+            return ServiceResult<Reminder>.NotFound("Reminder not found or you do not have permission.");
         }
 
         if (reminder.IsTaken)
         {
-            return (false, "Cannot snooze a reminder that has already been taken.");
+            return ServiceResult<Reminder>.InvalidOperation("Cannot snooze a reminder that has already been taken.");
         }
 
         if (reminder.SnoozeCount >= 3)
         {
-            return (false, "Maximum snooze limit reached.");
+            return ServiceResult<Reminder>.InvalidOperation("Maximum snooze limit reached.");
         }
 
         reminder.SnoozeCount++;
@@ -49,6 +51,6 @@ public class SnoozeReminderCommandHandler : IRequestHandler<SnoozeReminderComman
 
         await _cacheService.AddReminderToHotSetAsync(reminder.Id, reminder.NextReminderUtc);
 
-        return (true, $"Reminder snoozed for {reminder.SnoozeDurationMinutes} minutes.");
+        return ServiceResult<Reminder>.Success(reminder, $"Reminder snoozed for {reminder.SnoozeDurationMinutes} minutes.");
     }
 }

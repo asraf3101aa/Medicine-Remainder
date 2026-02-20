@@ -4,7 +4,7 @@ namespace MedicineReminder.Domain.Entities;
 
 public class Reminder : BaseEntity
 {
-    public int MedicineId { get; set; }
+    public string MedicineId { get; set; } = string.Empty;
     public Medicine Medicine { get; set; } = null!;
     public DateTime ReminderUtc { get; set; }
     public bool IsTaken { get; set; }

@@ -30,7 +30,7 @@ public class DailyReminderLoaderWorker : BackgroundService
             {
                 using (var scope = _serviceProvider.CreateScope())
                 {
-                    var context = scope.ServiceProvider.GetRequiredService<MedicineDbContext>();
+                    var context = scope.ServiceProvider.GetRequiredService<MedicineReminderDbContext>();
 
                     var next24Hours = DateTime.UtcNow.AddHours(24);
 
@@ -52,7 +52,6 @@ public class DailyReminderLoaderWorker : BackgroundService
                 _logger.LogError(ex, "Error occurred while loading daily reminders.");
             }
 
-            // Sleep for 4 hours
             await Task.Delay(TimeSpan.FromHours(4), stoppingToken);
         }
     }

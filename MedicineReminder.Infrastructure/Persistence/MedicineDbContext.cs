@@ -1,24 +1,23 @@
 using MedicineReminder.Application.Common.Interfaces;
 using MedicineReminder.Domain.Common;
 using MedicineReminder.Domain.Entities;
-using MedicineReminder.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace MedicineReminder.Infrastructure.Persistence;
 
-public class MedicineDbContext : IdentityDbContext<ApplicationUser>, IMedicineDbContext
+public class MedicineReminderDbContext : IdentityDbContext<User>, IMedicineReminderDbContext
 {
-    public MedicineDbContext(DbContextOptions<MedicineDbContext> options) : base(options)
+    public MedicineReminderDbContext(DbContextOptions<MedicineReminderDbContext> options) : base(options)
     {
     }
 
     public DbSet<Medicine> Medicines => Set<Medicine>();
     public DbSet<Reminder> Reminders => Set<Reminder>();
-
+    public DbSet<UserDevice> UserDevices => Set<UserDevice>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(MedicineDbContext).Assembly);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(MedicineReminderDbContext).Assembly);
         base.OnModelCreating(modelBuilder);
 
         // Global Query Filters for Soft Delete

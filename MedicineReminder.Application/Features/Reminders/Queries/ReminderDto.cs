@@ -5,8 +5,8 @@ namespace MedicineReminder.Application.Features.Reminders.Queries;
 
 public class ReminderDto : IMapFrom<Reminder>
 {
-    public int Id { get; set; }
-    public int MedicineId { get; set; }
+    public string Id { get; set; }
+    public string MedicineId { get; set; }
     public string MedicineName { get; set; } = string.Empty;
     public DateTime ReminderUtc { get; set; }
     public bool IsTaken { get; set; }

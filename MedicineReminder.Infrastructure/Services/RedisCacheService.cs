@@ -13,20 +13,20 @@ public class RedisCacheService : ICacheService
         _redis = redis;
     }
 
-    public async Task AddReminderToHotSetAsync(int reminderId, DateTime reminderUtc)
+    public async Task AddReminderToHotSetAsync(string reminderId, DateTime reminderUtc)
     {
         var db = _redis.GetDatabase();
         var score = new DateTimeOffset(reminderUtc).ToUnixTimeSeconds();
         await db.SortedSetAddAsync(HotSetKey, reminderId, score);
     }
 
-    public async Task RemoveReminderFromHotSetAsync(int reminderId)
+    public async Task RemoveReminderFromHotSetAsync(string reminderId)
     {
         var db = _redis.GetDatabase();
         await db.SortedSetRemoveAsync(HotSetKey, reminderId);
     }
 
-    public async Task<List<int>> GetDueRemindersAsync(DateTime utcNow)
+    public async Task<List<string>> GetDueRemindersAsync(DateTime utcNow)
     {
         var db = _redis.GetDatabase();
         var currentScore = new DateTimeOffset(utcNow).ToUnixTimeSeconds();
@@ -40,6 +40,6 @@ public class RedisCacheService : ICacheService
 
         var result = (RedisResult[]?)await db.ScriptEvaluateAsync(script, new { key = (RedisKey)HotSetKey, score = currentScore });
 
-        return result?.Select(x => (int)x).ToList() ?? new List<int>();
+        return result?.Select(x => x.ToString()).ToList() ?? new List<string>();
     }
 }

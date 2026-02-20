@@ -1,21 +1,29 @@
 using MediatR;
 using MedicineReminder.Application.Common.Interfaces;
+using MedicineReminder.Application.Common.Models;
+using MedicineReminder.Domain.Entities;
 
 namespace MedicineReminder.Application.Features.Auth.Commands;
 
-public record RegisterCommand(string Email, string Password) : IRequest<(AuthData? Data, string Message, string[]? Errors)>;
+public record RegisterCommand(string Email, string Password) : IRequest<ServiceResult<User>>;
 
-public class RegisterCommandHandler : IRequestHandler<RegisterCommand, (AuthData? Data, string Message, string[]? Errors)>
+public class RegisterCommandHandler : IRequestHandler<RegisterCommand, ServiceResult<User>>
 {
-    private readonly IIdentityService _identityService;
+    private readonly IUserService _userService;
 
-    public RegisterCommandHandler(IIdentityService identityService)
+    public RegisterCommandHandler(IUserService userService)
     {
-        _identityService = identityService;
+        _userService = userService;
     }
 
-    public async Task<(AuthData? Data, string Message, string[]? Errors)> Handle(RegisterCommand request, CancellationToken cancellationToken)
+    public async Task<ServiceResult<User>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
-        return await _identityService.RegisterAsync(request.Email, request.Password);
+        var user = new User
+        {
+            UserName = request.Email,
+            Email = request.Email,
+        };
+
+        return await _userService.CreateAsync(user);
     }
 }

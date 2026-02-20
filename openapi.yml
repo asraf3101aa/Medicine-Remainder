@@ -80,7 +80,7 @@ components:
       type: object
       properties:
         medicineId:
-          type: integer
+          type: string
         reminderUtc:
           type: string
           format: date-time
@@ -92,7 +92,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         name:
           type: string
         dosageAmount:
@@ -124,7 +124,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         reminderUtc:
           type: string
           format: date-time
@@ -149,7 +149,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         name:
           type: string
         dosageAmount:
@@ -173,9 +173,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         medicineId:
-          type: integer
+          type: string
         medicineName:
           type: string
         reminderUtc:
@@ -388,7 +388,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       requestBody:
         content:
           application/json:
@@ -410,7 +410,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         200:
           description: Medicine deleted
@@ -484,7 +484,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       requestBody:
         content:
           application/json:
@@ -506,7 +506,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         200:
           description: Reminder deleted
@@ -525,7 +525,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         200:
           description: Reminder marked as taken
@@ -544,7 +544,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         200:
           description: Reminder snoozed
@@ -563,7 +563,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
         - name: isActive
           in: query
           required: true

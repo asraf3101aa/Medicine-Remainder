@@ -1,17 +1,15 @@
-using Asp.Versioning;
 using MediatR;
 using MedicineReminder.Application.Features.Medicines.Commands;
 using MedicineReminder.Application.Features.Medicines.Queries;
 using MedicineReminder.Application.Common.Models;
+using MedicineReminder.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MedicineReminder.Api.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
 [Authorize]
-public class MedicinesController : ControllerBase
+public class MedicinesController : ApiControllerBase
 {
     private readonly ISender _mediator;
 
@@ -21,47 +19,51 @@ public class MedicinesController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<ApiResponse<int>>> Create(CreateMedicineCommand command)
+    public async Task<ActionResult<ApiResponse<Medicine>>> Create(CreateMedicineCommand command)
     {
-        var (result, message) = await _mediator.Send(command);
-        return Ok(ApiResponse<int>.Success(result, message));
+        var result = await _mediator.Send(command);
+        if (result.IsSuccess)
+        {
+            return Created(result.Data!, result.Message);
+        }
+        return HandleFailure(result);
     }
 
     [HttpGet]
     public async Task<ActionResult<ApiResponse<PaginatedList<MedicineDto>>>> Get([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
-        var (result, message) = await _mediator.Send(new GetMedicinesQuery { PageNumber = pageNumber, PageSize = pageSize });
-        return Ok(ApiResponse<PaginatedList<MedicineDto>>.Success(result, message));
+        var result = await _mediator.Send(new GetMedicinesQuery { PageNumber = pageNumber, PageSize = pageSize });
+        if (result.IsSuccess)
+        {
+            return Success(result.Data!);
+        }
+        return HandleFailure(result);
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<ApiResponse<bool>>> Update(int id, UpdateMedicineCommand command)
+    public async Task<ActionResult<ApiResponse<Medicine>>> Update(string id, UpdateMedicineCommand command)
     {
         if (id != command.Id)
         {
-            return BadRequest(ApiResponse<bool>.Error("ID mismatch."));
+            return BadRequest<Medicine>("ID mismatch.");
         }
 
-        var (success, message) = await _mediator.Send(command);
-
-        if (!success)
+        var result = await _mediator.Send(command);
+        if (result.IsSuccess)
         {
-            return BadRequest(ApiResponse<bool>.Error(message));
+            return Success(result.Data!, result.Message);
         }
-
-        return Ok(ApiResponse<bool>.Success(true, message));
+        return HandleFailure(result);
     }
 
     [HttpDelete("{id}")]
-    public async Task<ActionResult<ApiResponse<bool>>> Delete(int id)
+    public async Task<ActionResult<ApiResponse<Medicine>>> Delete(string id)
     {
-        var (success, message) = await _mediator.Send(new DeleteMedicineCommand(id));
-
-        if (!success)
+        var result = await _mediator.Send(new DeleteMedicineCommand(id));
+        if (result.IsSuccess)
         {
-            return BadRequest(ApiResponse<bool>.Error(message));
+            return Success(result.Data!, "Medicine deleted successfully.");
         }
-
-        return Ok(ApiResponse<bool>.Success(true, message));
+        return HandleFailure(result);
     }
 }

@@ -1,30 +1,31 @@
 using MediatR;
 using MedicineReminder.Application.Common.Interfaces;
+using MedicineReminder.Application.Common.Models;
 using MedicineReminder.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace MedicineReminder.Application.Features.Reminders.Commands;
 
-public record ScheduleReminderCommand : IRequest<(int Data, string Message)>
+public record ScheduleReminderCommand : IRequest<ServiceResult<Reminder>>
 {
-    public int MedicineId { get; init; }
+    public string MedicineId { get; init; }
     public DateTime ReminderUtc { get; init; }
 }
 
-public class ScheduleReminderCommandHandler : IRequestHandler<ScheduleReminderCommand, (int Data, string Message)>
+public class ScheduleReminderCommandHandler : IRequestHandler<ScheduleReminderCommand, ServiceResult<Reminder>>
 {
-    private readonly IMedicineDbContext _context;
+    private readonly IMedicineReminderDbContext _context;
     private readonly ICurrentUserService _currentUserService;
     private readonly ICacheService _cacheService;
 
-    public ScheduleReminderCommandHandler(IMedicineDbContext context, ICurrentUserService currentUserService, ICacheService cacheService)
+    public ScheduleReminderCommandHandler(IMedicineReminderDbContext context, ICurrentUserService currentUserService, ICacheService cacheService)
     {
         _context = context;
         _currentUserService = currentUserService;
         _cacheService = cacheService;
     }
 
-    public async Task<(int Data, string Message)> Handle(ScheduleReminderCommand request, CancellationToken cancellationToken)
+    public async Task<ServiceResult<Reminder>> Handle(ScheduleReminderCommand request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId ?? throw new UnauthorizedAccessException();
 
@@ -33,7 +34,7 @@ public class ScheduleReminderCommandHandler : IRequestHandler<ScheduleReminderCo
 
         if (medicine == null)
         {
-            throw new KeyNotFoundException("Medicine not found or you do not have permission.");
+            return ServiceResult<Reminder>.NotFound("Medicine not found or you do not have permission.");
         }
 
         var reminder = new Reminder
@@ -53,6 +54,6 @@ public class ScheduleReminderCommandHandler : IRequestHandler<ScheduleReminderCo
             await _cacheService.AddReminderToHotSetAsync(reminder.Id, reminder.ReminderUtc);
         }
 
-        return (reminder.Id, "Reminder scheduled successfully.");
+        return ServiceResult<Reminder>.Success(reminder, "Reminder scheduled successfully.");
     }
 }

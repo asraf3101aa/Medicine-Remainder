@@ -7,26 +7,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MedicineReminder.Application.Features.Medicines.Queries;
 
-public record GetMedicinesQuery : IRequest<(PaginatedList<MedicineDto> Data, string Message)>
+public record GetMedicinesQuery : IRequest<ServiceResult<PaginatedList<MedicineDto>>>
 {
     public int PageNumber { get; init; } = 1;
     public int PageSize { get; init; } = 10;
 }
 
-public class GetMedicinesQueryHandler : IRequestHandler<GetMedicinesQuery, (PaginatedList<MedicineDto> Data, string Message)>
+public class GetMedicinesQueryHandler : IRequestHandler<GetMedicinesQuery, ServiceResult<PaginatedList<MedicineDto>>>
 {
-    private readonly IMedicineDbContext _context;
+    private readonly IMedicineReminderDbContext _context;
     private readonly IMapper _mapper;
     private readonly ICurrentUserService _currentUserService;
 
-    public GetMedicinesQueryHandler(IMedicineDbContext context, IMapper mapper, ICurrentUserService currentUserService)
+    public GetMedicinesQueryHandler(IMedicineReminderDbContext context, IMapper mapper, ICurrentUserService currentUserService)
     {
         _context = context;
         _mapper = mapper;
         _currentUserService = currentUserService;
     }
 
-    public async Task<(PaginatedList<MedicineDto> Data, string Message)> Handle(GetMedicinesQuery request, CancellationToken cancellationToken)
+    public async Task<ServiceResult<PaginatedList<MedicineDto>>> Handle(GetMedicinesQuery request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId ?? throw new UnauthorizedAccessException();
 
@@ -44,6 +44,6 @@ public class GetMedicinesQueryHandler : IRequestHandler<GetMedicinesQuery, (Pagi
 
         var paginatedList = new PaginatedList<MedicineDto>(items, totalCount, request.PageNumber, request.PageSize);
 
-        return (paginatedList, "Medicines fetched successfully.");
+        return ServiceResult<PaginatedList<MedicineDto>>.Success(paginatedList, "Medicines fetched successfully.");
     }
 }

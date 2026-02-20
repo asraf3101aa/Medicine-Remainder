@@ -2,13 +2,14 @@ using MediatR;
 using MedicineReminder.Application.Common.Interfaces;
 using MedicineReminder.Domain.Entities;
 using MedicineReminder.Domain.Enums;
+using MedicineReminder.Application.Common.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace MedicineReminder.Application.Features.Medicines.Commands;
 
-public record UpdateMedicineCommand : IRequest<(bool Success, string Message)>
+public record UpdateMedicineCommand : IRequest<ServiceResult<Medicine>>
 {
-    public int Id { get; init; }
+    public string Id { get; init; }
     public string Name { get; init; } = string.Empty;
     public double DosageAmount { get; init; }
     public DosageUnit Unit { get; init; }
@@ -18,18 +19,18 @@ public record UpdateMedicineCommand : IRequest<(bool Success, string Message)>
     public DateTime? EndDate { get; init; }
 }
 
-public class UpdateMedicineCommandHandler : IRequestHandler<UpdateMedicineCommand, (bool Success, string Message)>
+public class UpdateMedicineCommandHandler : IRequestHandler<UpdateMedicineCommand, ServiceResult<Medicine>>
 {
-    private readonly IMedicineDbContext _context;
+    private readonly IMedicineReminderDbContext _context;
     private readonly ICurrentUserService _currentUserService;
 
-    public UpdateMedicineCommandHandler(IMedicineDbContext context, ICurrentUserService currentUserService)
+    public UpdateMedicineCommandHandler(IMedicineReminderDbContext context, ICurrentUserService currentUserService)
     {
         _context = context;
         _currentUserService = currentUserService;
     }
 
-    public async Task<(bool Success, string Message)> Handle(UpdateMedicineCommand request, CancellationToken cancellationToken)
+    public async Task<ServiceResult<Medicine>> Handle(UpdateMedicineCommand request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId ?? throw new UnauthorizedAccessException();
 
@@ -38,7 +39,7 @@ public class UpdateMedicineCommandHandler : IRequestHandler<UpdateMedicineComman
 
         if (medicine == null)
         {
-            return (false, "Medicine not found or you do not have permission.");
+            return ServiceResult<Medicine>.NotFound("Medicine not found or you do not have permission.");
         }
 
         medicine.Name = request.Name;
@@ -51,6 +52,6 @@ public class UpdateMedicineCommandHandler : IRequestHandler<UpdateMedicineComman
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        return (true, "Medicine updated successfully.");
+        return ServiceResult<Medicine>.Success(medicine, "Medicine updated successfully.");
     }
 }

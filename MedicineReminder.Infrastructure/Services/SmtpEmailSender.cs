@@ -1,4 +1,3 @@
-using MedicineReminder.Application.Common.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MailKit.Net.Smtp;

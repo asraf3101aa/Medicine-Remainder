@@ -27,6 +27,10 @@ public class ApiResponse<T>
     [JsonPropertyName("error")]
     public object? ErrorInfo { get; set; }
 
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonPropertyName("errors")]
+    public string[]? ErrorMessages { get; set; }
+
     public static ApiResponse<T> Success(T? data, string? message = null) => new()
     {
         Status = ApiResponseStatus.Success,
@@ -41,11 +45,24 @@ public class ApiResponse<T>
         Message = message
     };
 
+    public static ApiResponse<T> NotFound(string? message = "Not Found") => new()
+    {
+        Status = ApiResponseStatus.Fail,
+        Message = message
+    };
+
     public static ApiResponse<T> Error(string message, object? error = null) => new()
     {
         Status = ApiResponseStatus.Error,
         Message = message,
         ErrorInfo = error
+    };
+
+    public static ApiResponse<T> Error(string message, string[]? errors) => new()
+    {
+        Status = ApiResponseStatus.Error,
+        Message = message,
+        ErrorMessages = errors
     };
 }
 
@@ -75,4 +92,19 @@ public class PaginationMetadata
     public int TotalPages { get; set; }
     public bool HasPreviousPage => PageNumber > 1;
     public bool HasNextPage => PageNumber < TotalPages;
+}
+
+
+public class PaginationQuery
+{
+    private const int MaxPageSize = 50;
+    private int _pageSize = 10;
+
+    public int PageNumber { get; set; } = 1;
+
+    public int PageSize
+    {
+        get => _pageSize;
+        set => _pageSize = value > MaxPageSize ? MaxPageSize : value;
+    }
 }

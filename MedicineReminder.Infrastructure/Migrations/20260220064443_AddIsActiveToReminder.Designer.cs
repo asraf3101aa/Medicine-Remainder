@@ -11,7 +11,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace MedicineReminder.Infrastructure.Migrations
 {
-    [DbContext(typeof(MedicineDbContext))]
+    [DbContext(typeof(MedicineReminderDbContext))]
     [Migration("20260220064443_AddIsActiveToReminder")]
     partial class AddIsActiveToReminder
     {

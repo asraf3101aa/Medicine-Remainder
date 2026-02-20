@@ -1,6 +1,5 @@
 using MedicineReminder.Application.Common.Interfaces;
-using MedicineReminder.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
+using MedicineReminder.Domain.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -22,45 +21,31 @@ public class ReminderPumperWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("ReminderPumperWorker started.");
-
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                // Pull due reminders from Redis
-                // Check if any reminders are due
-                var reminderIds = await _cacheService.GetDueRemindersAsync(DateTime.UtcNow);
+                var dueReminderIds = await _cacheService.GetDueRemindersAsync(DateTime.UtcNow);
 
-                if (reminderIds.Any())
+                if (dueReminderIds != null && dueReminderIds.Any())
                 {
-                    _logger.LogInformation("Pumped {Count} due reminders from Redis.", reminderIds.Count);
-
                     using (var scope = _serviceProvider.CreateScope())
                     {
-                        var context = scope.ServiceProvider.GetRequiredService<MedicineDbContext>();
-                        var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
-                        var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+                        var notificationService = scope.ServiceProvider.GetRequiredService<IFirebaseNotificationService>();
+                        var reminderService = scope.ServiceProvider.GetRequiredService<IReminderService<Reminder>>();
 
-                        var reminders = await context.Reminders
-                            .Include(r => r.Medicine)
-                            .Where(r => reminderIds.Contains(r.Id))
-                            .ToListAsync(stoppingToken);
-
-                        foreach (var reminder in reminders)
+                        foreach (var reminderId in dueReminderIds)
                         {
-                            var user = await context.Users.FindAsync(new object[] { reminder.Medicine.UserId }, stoppingToken);
-
-                            if (user != null)
+                            var result = await reminderService.GetByIdAsync(reminderId);
+                            if (result.IsSuccess && result.Data != null)
                             {
-                                var subject = "Medicine Reminder";
-                                var body = $"It's time to take your medicine: {reminder.Medicine.Name} ({reminder.Medicine.DosageAmount} {(MedicineReminder.Domain.Enums.DosageUnit)reminder.Medicine.Unit})";
+                                var reminder = result.Data;
+                                await notificationService.SendNotificationAsync(
+                                    $"Reminder: {reminder.Medicine.Name}",
+                                    $"It's time to take your {reminder.Medicine.Name} ({reminder.Medicine.DosageAmount} {reminder.Medicine.Unit})",
+                                    reminder.Medicine.UserId);
 
-                                // Send Push Notification
-                                if (!string.IsNullOrEmpty(user.FcmToken))
-                                {
-                                    await notificationService.SendNotificationAsync(subject, body, user.Id);
-                                }
+                                _logger.LogInformation("Sent notification for reminder {ReminderId}", reminderId);
                             }
                         }
                     }
@@ -68,10 +53,9 @@ public class ReminderPumperWorker : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred in ReminderPumperWorker.");
+                _logger.LogError(ex, "Error occurred while pumping reminders.");
             }
 
-            // Run every minute
             await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
         }
     }

@@ -7,6 +7,6 @@ public class DeleteReminderCommandValidator : AbstractValidator<DeleteReminderCo
     public DeleteReminderCommandValidator()
     {
         RuleFor(v => v.Id)
-            .GreaterThan(0).WithMessage("Id must be greater than 0.");
+            .NotEmpty().WithMessage("Id must be greater than 0.");
     }
 }

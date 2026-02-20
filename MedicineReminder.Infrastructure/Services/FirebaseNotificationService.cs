@@ -1,25 +1,19 @@
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
-using MedicineReminder.Infrastructure.Identity;
+using MedicineReminder.Application.Common.Interfaces;
 using MedicineReminder.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace MedicineReminder.Infrastructure.Services;
 
-public interface INotificationService
-{
-    Task SendNotificationAsync(string title, string body, string userId);
-    Task SendMulticastNotificationAsync(string title, string body, List<string> userIds);
-}
-
-public class FirebaseNotificationService : INotificationService
+public class FirebaseNotificationService : IFirebaseNotificationService
 {
     private readonly ILogger<FirebaseNotificationService> _logger;
-    private readonly MedicineDbContext _dbContext;
+    private readonly MedicineReminderDbContext _dbContext;
 
-    public FirebaseNotificationService(ILogger<FirebaseNotificationService> logger, MedicineDbContext dbContext)
+    public FirebaseNotificationService(ILogger<FirebaseNotificationService> logger, MedicineReminderDbContext dbContext)
     {
         _logger = logger;
         _dbContext = dbContext;
@@ -28,9 +22,7 @@ public class FirebaseNotificationService : INotificationService
         {
             try
             {
-                // This will fail if GOOGLE_APPLICATION_CREDENTIALS is not set.
-                // For development, you can suppress it or mock it.
-                // We'll wrap it in a try-catch to not crash the app start, but warn heavily.
+                // Attempt to initialize Firebase with application default credentials
                 FirebaseApp.Create(new AppOptions
                 {
                     Credential = GoogleCredential.GetApplicationDefault()
@@ -51,70 +43,37 @@ public class FirebaseNotificationService : INotificationService
             return;
         }
 
-        var user = await _dbContext.Users.FindAsync(userId);
-        if (user == null || string.IsNullOrEmpty(user.FcmToken))
-        {
-            _logger.LogWarning("User {UserId} not found or has no FCM token.", userId);
-            return;
-        }
-
-        var message = new Message
-        {
-            Token = user.FcmToken,
-            Notification = new Notification
-            {
-                Title = title,
-                Body = body
-            }
-        };
-
-        try
-        {
-            string response = await FirebaseMessaging.DefaultInstance.SendAsync(message);
-            _logger.LogInformation("Successfully sent message: {Response}", response);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error sending Firebase notification to user {UserId}.", userId);
-        }
-    }
-
-    public async Task SendMulticastNotificationAsync(string title, string body, List<string> userIds)
-    {
-        var tokens = await _dbContext.Users
-            .Where(u => userIds.Contains(u.Id) && !string.IsNullOrEmpty(u.FcmToken))
-            .Select(u => u.FcmToken!)
+        var userDevices = await _dbContext.UserDevices
+            .Where(ud => ud.UserId == userId && !string.IsNullOrEmpty(ud.FcmToken))
             .ToListAsync();
 
-        if (!tokens.Any())
+        if (userDevices.Count == 0)
         {
-            _logger.LogWarning("No valid FCM tokens found for the provided user IDs.");
+            _logger.LogWarning("User {UserId} has no devices with valid FCM tokens.", userId);
             return;
         }
 
-        var message = new MulticastMessage
+        foreach (var device in userDevices)
         {
-            Tokens = tokens,
-            Notification = new Notification
+            var message = new Message
             {
-                Title = title,
-                Body = body
-            }
-        };
+                Token = device.FcmToken,
+                Notification = new Notification
+                {
+                    Title = title,
+                    Body = body
+                }
+            };
 
-        try
-        {
-            BatchResponse response = await FirebaseMessaging.DefaultInstance.SendEachForMulticastAsync(message);
-            _logger.LogInformation("{Count} messages sent successfully.", response.SuccessCount);
-
-            if (response.FailureCount > 0)
+            try
             {
-                _logger.LogWarning("{Count} messages failed to send.", response.FailureCount);
+                string response = await FirebaseMessaging.DefaultInstance.SendAsync(message);
+                _logger.LogInformation("Successfully sent message to device {DeviceId}: {Response}", device.Id, response);
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error sending multicast Firebase notifications.");
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending Firebase notification to device {DeviceId} for user {UserId}.", device.Id, userId);
+            }
         }
     }
 }

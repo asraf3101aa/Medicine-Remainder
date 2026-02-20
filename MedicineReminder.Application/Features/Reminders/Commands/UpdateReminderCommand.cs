@@ -1,31 +1,32 @@
 using MediatR;
 using MedicineReminder.Application.Common.Interfaces;
+using MedicineReminder.Application.Common.Models;
 using MedicineReminder.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace MedicineReminder.Application.Features.Reminders.Commands;
 
-public record UpdateReminderCommand : IRequest<(bool Success, string Message)>
+public record UpdateReminderCommand : IRequest<ServiceResult<Reminder>>
 {
-    public int Id { get; init; }
+    public string Id { get; init; }
     public DateTime ReminderUtc { get; init; }
     public bool IsActive { get; init; }
 }
 
-public class UpdateReminderCommandHandler : IRequestHandler<UpdateReminderCommand, (bool Success, string Message)>
+public class UpdateReminderCommandHandler : IRequestHandler<UpdateReminderCommand, ServiceResult<Reminder>>
 {
-    private readonly IMedicineDbContext _context;
+    private readonly IMedicineReminderDbContext _context;
     private readonly ICurrentUserService _currentUserService;
     private readonly ICacheService _cacheService;
 
-    public UpdateReminderCommandHandler(IMedicineDbContext context, ICurrentUserService currentUserService, ICacheService cacheService)
+    public UpdateReminderCommandHandler(IMedicineReminderDbContext context, ICurrentUserService currentUserService, ICacheService cacheService)
     {
         _context = context;
         _currentUserService = currentUserService;
         _cacheService = cacheService;
     }
 
-    public async Task<(bool Success, string Message)> Handle(UpdateReminderCommand request, CancellationToken cancellationToken)
+    public async Task<ServiceResult<Reminder>> Handle(UpdateReminderCommand request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId ?? throw new UnauthorizedAccessException();
 
@@ -35,7 +36,7 @@ public class UpdateReminderCommandHandler : IRequestHandler<UpdateReminderComman
 
         if (reminder == null)
         {
-            return (false, "Reminder not found or you do not have permission.");
+            return ServiceResult<Reminder>.NotFound("Reminder not found or you do not have permission.");
         }
 
         bool scheduleChanged = reminder.ReminderUtc != request.ReminderUtc;
@@ -46,7 +47,6 @@ public class UpdateReminderCommandHandler : IRequestHandler<UpdateReminderComman
             reminder.NextReminderUtc = request.ReminderUtc;
             reminder.IsTaken = false;
             reminder.SnoozeCount = 0;
-            // Should IsActive be updated? Yes, per command.
         }
         reminder.IsActive = request.IsActive;
 
@@ -64,6 +64,6 @@ public class UpdateReminderCommandHandler : IRequestHandler<UpdateReminderComman
             await _cacheService.RemoveReminderFromHotSetAsync(reminder.Id);
         }
 
-        return (true, "Reminder updated successfully.");
+        return ServiceResult<Reminder>.Success(reminder, "Reminder updated successfully.");
     }
 }

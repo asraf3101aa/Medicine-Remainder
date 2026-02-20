@@ -8,7 +8,7 @@ public class ScheduleReminderCommandValidator : AbstractValidator<ScheduleRemind
     {
         RuleFor(v => v.MedicineId)
             .NotEmpty().WithMessage("Medicine ID is required.")
-            .GreaterThan(0).WithMessage("Invalid Medicine ID.");
+            .NotEmpty().WithMessage("Invalid Medicine ID.");
 
         RuleFor(v => v.ReminderUtc)
             .NotEmpty().WithMessage("Reminder time is required.")

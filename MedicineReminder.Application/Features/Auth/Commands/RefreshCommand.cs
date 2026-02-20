@@ -1,21 +1,23 @@
 using MediatR;
 using MedicineReminder.Application.Common.Interfaces;
+using MedicineReminder.Application.Common.Models;
+using MedicineReminder.Domain.Entities;
 
 namespace MedicineReminder.Application.Features.Auth.Commands;
 
-public record RefreshCommand(string AccessToken, string RefreshToken) : IRequest<(AuthData? Data, string Message, string[]? Errors)>;
+public record RefreshCommand(string AccessToken, string RefreshToken) : IRequest<ServiceResult<AuthTokens>>;
 
-public class RefreshCommandHandler : IRequestHandler<RefreshCommand, (AuthData? Data, string Message, string[]? Errors)>
+public class RefreshCommandHandler : IRequestHandler<RefreshCommand, ServiceResult<AuthTokens>>
 {
-    private readonly IIdentityService _identityService;
+    private readonly IAuthService<User> _authService;
 
-    public RefreshCommandHandler(IIdentityService identityService)
+    public RefreshCommandHandler(IAuthService<User> authService)
     {
-        _identityService = identityService;
+        _authService = authService;
     }
 
-    public async Task<(AuthData? Data, string Message, string[]? Errors)> Handle(RefreshCommand request, CancellationToken cancellationToken)
+    public async Task<ServiceResult<AuthTokens>> Handle(RefreshCommand request, CancellationToken cancellationToken)
     {
-        return await _identityService.RefreshTokenAsync(request.AccessToken, request.RefreshToken);
+        return await _authService.RefreshTokensAsync(request.RefreshToken);
     }
 }
