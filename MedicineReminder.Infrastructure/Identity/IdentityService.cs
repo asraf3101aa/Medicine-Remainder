@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Net;
 using MedicineReminder.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
@@ -69,9 +70,21 @@ public class IdentityService : IIdentityService
         }
 
         var code = await _userManager.GenerateEmailConfirmationTokenAsync(newUser);
-        await _emailService.SendEmailAsync(newUser.Email!, "Verify your email", $"Your verification code is: {code}");
+        var frontendUrl = _configuration.GetValue<string>("FrontendUrl") ?? "http://localhost:5173";
+        var verificationUrl = $"{frontendUrl}/verify-email?userId={newUser.Id}&token={System.Net.WebUtility.UrlEncode(code)}";
 
-        return (null, "Registration successful. Please check your email for a verification code.", null);
+        string emailBody = $@"
+            <div style='font-family: Arial, sans-serif; text-align: center; padding: 20px; border: 1px solid #ddd; border-radius: 10px;'>
+                <h2 style='color: #4CAF50;'>Welcome to Medicine Reminder!</h2>
+                <p>Please click the button below to verify your email address and get started.</p>
+                <a href='{verificationUrl}' style='display: inline-block; padding: 12px 24px; font-size: 16px; color: white; background-color: #4CAF50; text-decoration: none; border-radius: 5px; margin-top: 10px;'>Verify Email</a>
+                <p style='margin-top: 20px; font-size: 12px; color: #777;'>If the button above doesn't work, copy and paste this link into your browser:</p>
+                <p style='font-size: 12px; color: #777;'>{verificationUrl}</p>
+            </div>";
+
+        await _emailService.SendEmailAsync(newUser.Email!, "Verify your email", emailBody);
+
+        return (null, "Registration successful. Please check your email to verify your account.", null);
     }
 
     public async Task<(AuthData? Data, string Message, string[]? Errors)> RefreshTokenAsync(string accessToken, string refreshToken)
