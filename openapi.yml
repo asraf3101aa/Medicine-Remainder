@@ -1,0 +1,578 @@
+openapi: 3.0.1
+info:
+  title: MedicineReminder API
+  description: API for managing personal medicine reminders with JWT authentication and standardized responses.
+  version: v1
+servers:
+  - url: http://localhost:7002
+    description: Local Development Server (HTTP)
+  - url: https://localhost:7001
+    description: Local Development Server (HTTPS)
+
+components:
+  securitySchemes:
+    Bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Enter your JWT token. Example - "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+  schemas:
+    ApiResponseStatus:
+      type: string
+      enum: [Success, Fail, Error]
+      description: The status of the API response.
+
+    AuthRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+      required:
+        - email
+        - password
+
+    RefreshRequest:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+      required:
+        - accessToken
+        - refreshToken
+
+    CreateMedicineCommand:
+      type: object
+      properties:
+        name:
+          type: string
+        dosageAmount:
+          type: number
+          format: double
+        unit:
+          $ref: '#/components/schemas/DosageUnit'
+        type:
+          $ref: '#/components/schemas/MedicineType'
+        description:
+          type: string
+          nullable: true
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - name
+        - dosageAmount
+        - unit
+        - type
+        - startDate
+
+    ScheduleReminderCommand:
+      type: object
+      properties:
+        medicineId:
+          type: integer
+        reminderUtc:
+          type: string
+          format: date-time
+      required:
+        - medicineId
+        - reminderUtc
+
+    UpdateMedicineCommand:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        dosageAmount:
+          type: number
+          format: double
+        unit:
+          $ref: '#/components/schemas/DosageUnit'
+        type:
+          $ref: '#/components/schemas/MedicineType'
+        description:
+          type: string
+          nullable: true
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - name
+        - dosageAmount
+        - unit
+        - type
+        - startDate
+
+    UpdateReminderCommand:
+      type: object
+      properties:
+        id:
+          type: integer
+        reminderUtc:
+          type: string
+          format: date-time
+        isActive:
+          type: boolean
+      required:
+        - id
+        - reminderUtc
+        - isActive
+
+    DosageUnit:
+      type: integer
+      enum: [0, 1, 2, 3, 4, 5]
+      description: 0 = Mg, 1 = Ml, 2 = Tablet, 3 = Capsule, 4 = Drop, 5 = Puff
+
+    MedicineType:
+      type: integer
+      enum: [0, 1, 2, 3, 4, 5, 6, 7]
+      description: 0=Capsule, 1=Tablet, 2=Syrup, 3=Injection, 4=Cream, 5=Drops, 6=Inhaler, 7=Other
+
+    MedicineDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        dosageAmount:
+          type: number
+        unit:
+          $ref: '#/components/schemas/DosageUnit'
+        type:
+          $ref: '#/components/schemas/MedicineType'
+        description:
+          type: string
+          nullable: true
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+          nullable: true
+
+    ReminderDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        medicineId:
+          type: integer
+        medicineName:
+          type: string
+        reminderUtc:
+          type: string
+          format: date-time
+        isTaken:
+          type: boolean
+        isActive:
+          type: boolean
+
+    PaginationMetadata:
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+        pageSize:
+          type: integer
+        totalCount:
+          type: integer
+        totalPages:
+          type: integer
+        hasPreviousPage:
+          type: boolean
+        hasNextPage:
+          type: boolean
+
+    PaginatedMedicineList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicineDto'
+        meta:
+          $ref: '#/components/schemas/PaginationMetadata'
+
+    PaginatedReminderList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReminderDto'
+        meta:
+          $ref: '#/components/schemas/PaginationMetadata'
+
+    ApiResponse:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ApiResponseStatus'
+        message:
+          type: string
+          nullable: true
+        data:
+          type: object
+          nullable: true
+        errors:
+          type: object
+          additionalProperties: {}
+          nullable: true
+        errorDetail:
+          type: object
+          nullable: true
+
+security:
+  - Bearer: []
+
+paths:
+  /api/Auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Register a new user
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+      responses:
+        200:
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/Auth/verify-email:
+    get:
+      tags:
+        - Auth
+      summary: Verify user email using userId and token
+      security: []
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        400:
+          description: Verification failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/Auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Login to get access and refresh tokens
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/Auth/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Refresh tokens using a valid refresh token
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        200:
+          description: Tokens refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/Medicines:
+    get:
+      tags:
+        - Medicines
+      summary: Get all medicines for the current user (Paginated)
+      parameters:
+        - name: pageNumber
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: Paginated list of medicines
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedMedicineList'
+    post:
+      tags:
+        - Medicines
+      summary: Create a new medicine
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMedicineCommand'
+      responses:
+        200:
+          description: Medicine created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/Medicines/{id}:
+    put:
+      tags:
+        - Medicines
+      summary: Update a medicine
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMedicineCommand'
+      responses:
+        200:
+          description: Medicine updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags:
+        - Medicines
+      summary: Delete a medicine
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Medicine deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/Reminders:
+    get:
+      tags:
+        - Reminders
+      summary: Get all reminders for the current user (Paginated)
+      parameters:
+        - name: pageNumber
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: isTaken
+          in: query
+          schema:
+            type: boolean
+            nullable: true
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+            nullable: true
+      responses:
+        200:
+          description: Paginated list of reminders
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedReminderList'
+    post:
+      tags:
+        - Reminders
+      summary: Schedule a reminder for a medicine
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleReminderCommand'
+      responses:
+        200:
+          description: Reminder scheduled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/Reminders/{id}:
+    put:
+      tags:
+        - Reminders
+      summary: Update a reminder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateReminderCommand'
+      responses:
+        200:
+          description: Reminder updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags:
+        - Reminders
+      summary: Delete a reminder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Reminder deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/Reminders/{id}/taken:
+    put:
+      tags:
+        - Reminders
+      summary: Mark a reminder as taken
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Reminder marked as taken
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/Reminders/{id}/snooze:
+    put:
+      tags:
+        - Reminders
+      summary: Snooze a reminder (extends time by 5 minutes, max 3 times)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Reminder snoozed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/Reminders/{id}/status:
+    put:
+      tags:
+        - Reminders
+      summary: Enable or disable a reminder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: isActive
+          in: query
+          required: true
+          schema:
+            type: boolean
+      responses:
+        200:
+          description: Reminder status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'

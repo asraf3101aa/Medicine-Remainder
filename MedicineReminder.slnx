@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="MedicineReminder.Domain/MedicineReminder.Domain.csproj" />
+  <Project Path="MedicineReminder.Application/MedicineReminder.Application.csproj" />
+  <Project Path="MedicineReminder.Infrastructure/MedicineReminder.Infrastructure.csproj" />
+  <Project Path="MedicineReminder.Api/MedicineReminder.Api.csproj" />
+  <Project Path="MedicineReminder.Application.UnitTests/MedicineReminder.Application.UnitTests.csproj" />
+</Solution>
